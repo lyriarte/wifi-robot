@@ -174,6 +174,23 @@ void step8(int pin1, int pin2, int pin3, int pin4, int i) {
 } 
 
 
+/*
+ * WHEELBOT
+ */
+
+typedef struct {
+	int leftWheel;
+	int rightWheel;
+	int rearServo;
+	int poll_ms;
+	int steer;
+} WHEELBOTInfo;
+
+WHEELBOTInfo wheelbot = {
+	0,1,0,-1,90
+};
+
+
 
 /* **** **** **** **** **** ****
  * Functions
@@ -375,6 +392,36 @@ bool handleSTEPPERRequest(const char * req) {
 
 
 /*
+ * Wheelbot
+ */ 
+
+void updateWheelbotStatus() {
+	if (wheelbot.poll_ms < 0) {
+		stepperInfos[wheelbot.leftWheel].steps =  0;
+		stepperInfos[wheelbot.rightWheel].steps = 0;		
+	}
+	else {
+		stepperInfos[wheelbot.leftWheel].steps = -1000;
+		stepperInfos[wheelbot.rightWheel].steps = 1000;		
+	}
+	stepperInfos[wheelbot.leftWheel].pollInfo.poll_ms =  wheelbot.poll_ms + (wheelbot.steer-90) / 10;
+	stepperInfos[wheelbot.rightWheel].pollInfo.poll_ms = wheelbot.poll_ms - (wheelbot.steer-90) / 10;
+	servoInfos[wheelbot.rearServo].angle = wheelbot.steer;
+}
+
+bool handleWHEELBOTRequest(const char * req) {
+	String strReq = req;
+	if (strReq.startsWith("POLL/"))
+		wheelbot.poll_ms = strReq.substring(5).toInt();
+	else if (strReq.startsWith("STEER/"))
+		wheelbot.steer = strReq.substring(6).toInt();
+	else
+		return false;
+	return true;
+}
+
+
+/*
  * HTTP request main dispatch
  */
 
@@ -410,6 +457,8 @@ bool handleHttpRequest(const char * req) {
 		result = handleSERVORequest(strReq.substring(6).c_str());
 	else if (strReq.startsWith("STEPPER/"))
 		result = handleSTEPPERRequest(strReq.substring(8).c_str());
+	else if (strReq.startsWith("WHEELBOT/"))
+		result = handleWHEELBOTRequest(strReq.substring(9).c_str());
 	if (result)
 		replyHttpSuccess(strReq);
 	else
@@ -442,6 +491,7 @@ void loop() {
 			delay(WIFI_CLIENT_DELAY_MS);
 			wifiClient.stop();
 		}
+		updateWheelbotStatus();
 		for (deviceIndex=0; deviceIndex<N_LED; deviceIndex++)
 			updateLEDStatus(deviceIndex);
 		for (deviceIndex=0; deviceIndex<N_SERVO; deviceIndex++)
