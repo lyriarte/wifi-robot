@@ -177,3 +177,39 @@ paths:
           description: "success"
         400:
           description: "error"
+  /WHEELBOT/POLL/{millis}:
+    get:
+      tags:
+      - "WHEELBOT"
+      summary: "Set WHEELBOT poll delay. -1 to stop."
+      parameters:
+      - name: "millis"
+        in: "path"
+        description: "Poll delay in milliseconds"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 5
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"
+  /WHEELBOT/STEER/{angle}:
+    get:
+      tags:
+      - "WHEELBOT"
+      summary: "Set WHEELBOT steer angle in degrees"
+      parameters:
+      - name: "angle"
+        in: "path"
+        description: "Angle in degrees"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 90
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"

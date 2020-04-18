@@ -35,3 +35,13 @@ GET /STEPPER/{index}/{steps}
 GET /STEPPER/{index}/POLL/{millis}
 ```
 
+#### WHEELBOT
+
+```
+GET /WHEELBOT/POLL/{millis}
+```
+
+```
+GET /WHEELBOT/STEER/{angle}
+```
+
