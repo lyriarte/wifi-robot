@@ -102,6 +102,56 @@ paths:
           description: "success"
         400:
           description: "error"
+  /LED/{index}/BLINKON/{millis}:
+    get:
+      tags:
+      - "LED"
+      summary: "Set LED blink ON delay"
+      parameters:
+      - name: "index"
+        in: "path"
+        description: "Index of LED to address"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 0
+      - name: "millis"
+        in: "path"
+        description: "Delay in milliseconds"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 200
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"
+  /LED/{index}/BLINKOFF/{millis}:
+    get:
+      tags:
+      - "LED"
+      summary: "Set LED blink OFF delay"
+      parameters:
+      - name: "index"
+        in: "path"
+        description: "Index of LED to address"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 0
+      - name: "millis"
+        in: "path"
+        description: "Delay in milliseconds"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 200
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"
   /SERVO/{index}/{angle}:
     get:
       tags:

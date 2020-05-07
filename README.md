@@ -19,6 +19,14 @@ GET /LED/{index}/BLINK/{count}
 GET /LED/{index}/POLL/{millis}
 ```
 
+```
+GET /LED/{index}/BLINKON/{millis}
+```
+
+```
+GET /LED/{index}/BLINKOFF/{millis}
+```
+
 #### SERVO
 
 ```
