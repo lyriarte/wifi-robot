@@ -100,6 +100,7 @@ typedef struct {
 	int blink;
 	int blink_on_ms;
 	int blink_off_ms;
+	int invert;
 } LEDInfo;
 
 LEDInfo ledInfos[] = {
@@ -108,21 +109,24 @@ LEDInfo ledInfos[] = {
 		2,	// D4 led
 		LOW,
 		-1,
-		50,250
+		50,250,
+		1
 	},
 	{
 		{0, 1000},
 		5,	// D1 motor left
 		LOW,
 		0,
-		0,0
+		0,0,
+		0
 	},
 	{
 		{0, 1000},
 		4,	// D2 motor right
 		LOW,
 		0,
-		0,0
+		0,0,
+		0
 	}
 };
 
@@ -337,7 +341,10 @@ void updateLEDStatus(int index) {
 	}
 	if (ledInfos[index].blink > 0)
 		ledInfos[index].blink--;
-	digitalWrite(ledInfos[index].gpio, ledInfos[index].state);
+	if (ledInfos[index].invert)
+		digitalWrite(ledInfos[index].gpio, ledInfos[index].state == HIGH ? LOW : HIGH);
+	else
+		digitalWrite(ledInfos[index].gpio, ledInfos[index].state);
 }
 
 bool handleLEDRequest(const char * req) {
