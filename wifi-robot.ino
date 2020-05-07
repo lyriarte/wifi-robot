@@ -25,6 +25,7 @@
 #define REQ_BUFFER_SIZE 1024
 
 #define MAIN_LOOP_POLL_MS 2
+#define MOTOR_POLL_MAX_MS 1000
 
 /* **** **** **** **** **** ****
  * Global variables
@@ -113,7 +114,7 @@ LEDInfo ledInfos[] = {
 		1
 	},
 	{
-		{0, 1000},
+		{0, 5000},
 		5,	// D1 motor left
 		LOW,
 		0,
@@ -121,7 +122,7 @@ LEDInfo ledInfos[] = {
 		0
 	},
 	{
-		{0, 1000},
+		{0, 5000},
 		4,	// D2 motor right
 		LOW,
 		0,
@@ -202,7 +203,7 @@ typedef struct {
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	0,1,0,-1,90
+	1,2,0,-1,90
 };
 
 
@@ -440,22 +441,29 @@ bool handleSTEPPERRequest(const char * req) {
 
 void updateWheelbotStatus() {
 	if (wheelbot.poll_ms < 0) {
-		stepperInfos[wheelbot.leftWheel].steps =  0;
-		stepperInfos[wheelbot.rightWheel].steps = 0;		
+		ledInfos[wheelbot.leftWheel].blink = 0;
+		ledInfos[wheelbot.rightWheel].blink = 0;		
+		ledInfos[wheelbot.leftWheel].state = LOW;
+		ledInfos[wheelbot.rightWheel].state = LOW;	
 	}
 	else {
-		stepperInfos[wheelbot.leftWheel].steps = -1000;
-		stepperInfos[wheelbot.rightWheel].steps = 1000;		
+		ledInfos[wheelbot.leftWheel].blink = -1;
+		ledInfos[wheelbot.rightWheel].blink = -1;		
 	}
-	stepperInfos[wheelbot.leftWheel].pollInfo.poll_ms =  wheelbot.poll_ms + (wheelbot.steer-90) / 10;
-	stepperInfos[wheelbot.rightWheel].pollInfo.poll_ms = wheelbot.poll_ms - (wheelbot.steer-90) / 10;
+	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = MOTOR_POLL_MAX_MS - wheelbot.poll_ms;
+	ledInfos[wheelbot.leftWheel].blink_off_ms = ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_ms;
+	int steer_ms = (wheelbot.steer - 90) * 5;
+	ledInfos[wheelbot.leftWheel].blink_on_ms -= steer_ms;
+	ledInfos[wheelbot.leftWheel].blink_off_ms+= steer_ms;
+	ledInfos[wheelbot.rightWheel].blink_on_ms+= steer_ms;
+	ledInfos[wheelbot.rightWheel].blink_off_ms-=steer_ms;
 	servoInfos[wheelbot.rearServo].angle = wheelbot.steer;
 }
 
 bool handleWHEELBOTRequest(const char * req) {
 	String strReq = req;
 	if (strReq.startsWith("POLL/"))
-		wheelbot.poll_ms = strReq.substring(5).toInt();
+		wheelbot.poll_ms = min((int)strReq.substring(5).toInt(),MOTOR_POLL_MAX_MS);
 	else if (strReq.startsWith("STEER/"))
 		wheelbot.steer = strReq.substring(6).toInt();
 	else
