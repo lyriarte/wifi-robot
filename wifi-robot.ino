@@ -103,6 +103,13 @@ typedef struct {
 } LEDInfo;
 
 LEDInfo ledInfos[] = {
+	{
+		{0, 500},
+		2,	// D4 led
+		LOW,
+		-1,
+		50,450
+	}
 };
 
 #define N_LED (sizeof(ledInfos) / sizeof(LEDInfo))
@@ -121,7 +128,7 @@ typedef struct {
 SERVOInfo servoInfos[] = {
 	{
 		new Servo(),
-		2,
+		14,	// D5 servo
 		90
 	}
 };
@@ -144,12 +151,6 @@ STEPPERInfo stepperInfos[] = {
 	{// D0 D1 D2 D3
 		{0, 1},
 		{16,5,4,0},
-		0,
-		0
-	},
-	{// D5 D6 D7 D8
-		{0, 1},
-		{14,12,13,15},
 		0,
 		0
 	}
