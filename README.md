@@ -50,6 +50,10 @@ GET /WHEELBOT/POLL/{millis}
 ```
 
 ```
+GET /WHEELBOT/POLLMAX/{millis}
+```
+
+```
 GET /WHEELBOT/STEER/{angle}
 ```
 

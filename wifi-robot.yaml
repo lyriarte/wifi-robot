@@ -245,6 +245,24 @@ paths:
           description: "success"
         400:
           description: "error"
+  /WHEELBOT/POLLMAX/{millis}:
+    get:
+      tags:
+      - "WHEELBOT"
+      summary: "Set WHEELBOT maximum poll delay."
+      parameters:
+      - name: "millis"
+        in: "path"
+        description: "Poll delay in milliseconds"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 1000
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"
   /WHEELBOT/STEER/{angle}:
     get:
       tags:

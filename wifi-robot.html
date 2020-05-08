@@ -31,7 +31,7 @@ function pollChanged() {
 
 function steerChanged() {
 	view.steerLabel.innerHTML = view.steerSlider.value;
-	sendCommand('/WHEELBOT/STEER/'+view.steerSlider.value)
+	sendCommand('/WHEELBOT/STEER/'+view.steerSlider.value);
 }
 
 
@@ -68,6 +68,10 @@ function initView() {
 	var args = argsFromQueryString(window.location.toString().split("\?")[1]);
 	if (args.host)
 		host = args.host;
+	if (args.pollmax) {
+		view.pollSlider.max = args.pollmax;
+		sendCommand('/WHEELBOT/POLLMAX/'+view.pollSlider.max);
+	}
 }
 
 </script>

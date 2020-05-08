@@ -199,11 +199,12 @@ typedef struct {
 	int rightWheel;
 	int rearServo;
 	int poll_ms;
+	int poll_max_ms;
 	int steer;
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	1,2,0,-1,90
+	1,2,0,-1,MOTOR_POLL_MAX_MS,90
 };
 
 
@@ -450,20 +451,22 @@ void updateWheelbotStatus() {
 		ledInfos[wheelbot.leftWheel].blink = -1;
 		ledInfos[wheelbot.rightWheel].blink = -1;		
 	}
-	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = MOTOR_POLL_MAX_MS - wheelbot.poll_ms;
+	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = wheelbot.poll_max_ms - wheelbot.poll_ms;
 	ledInfos[wheelbot.leftWheel].blink_off_ms = ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_ms;
-	int steer_ms = (wheelbot.steer - 90) * 5;
-	ledInfos[wheelbot.leftWheel].blink_on_ms -= steer_ms;
-	ledInfos[wheelbot.leftWheel].blink_off_ms+= steer_ms;
-	ledInfos[wheelbot.rightWheel].blink_on_ms+= steer_ms;
-	ledInfos[wheelbot.rightWheel].blink_off_ms-=steer_ms;
-	servoInfos[wheelbot.rearServo].angle = wheelbot.steer;
+	float steer_factor = ((float)wheelbot.steer) / (float)90;
+	ledInfos[wheelbot.leftWheel].blink_on_ms = (int)(((float)ledInfos[wheelbot.leftWheel].blink_on_ms) / steer_factor);
+	ledInfos[wheelbot.leftWheel].blink_off_ms = (int)(((float)ledInfos[wheelbot.leftWheel].blink_off_ms) * steer_factor);
+	ledInfos[wheelbot.rightWheel].blink_on_ms = (int)(((float)ledInfos[wheelbot.rightWheel].blink_on_ms) * steer_factor);
+	ledInfos[wheelbot.rightWheel].blink_off_ms = (int)(((float)ledInfos[wheelbot.rightWheel].blink_off_ms) / steer_factor);		
+	servoInfos[wheelbot.rearServo].angle = wheelbot.steer;	
 }
 
 bool handleWHEELBOTRequest(const char * req) {
 	String strReq = req;
 	if (strReq.startsWith("POLL/"))
-		wheelbot.poll_ms = min((int)strReq.substring(5).toInt(),MOTOR_POLL_MAX_MS);
+		wheelbot.poll_ms = min((int)strReq.substring(5).toInt(),wheelbot.poll_max_ms);
+	else if (strReq.startsWith("POLLMAX/"))
+		wheelbot.poll_max_ms = strReq.substring(8).toInt();
 	else if (strReq.startsWith("STEER/"))
 		wheelbot.steer = strReq.substring(6).toInt();
 	else
