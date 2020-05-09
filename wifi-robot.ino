@@ -442,22 +442,29 @@ bool handleSTEPPERRequest(const char * req) {
 
 void updateWheelbotStatus() {
 	if (wheelbot.poll_ms < 0) {
+		// poll off, engine off
 		ledInfos[wheelbot.leftWheel].blink = 0;
 		ledInfos[wheelbot.rightWheel].blink = 0;		
 		ledInfos[wheelbot.leftWheel].state = LOW;
 		ledInfos[wheelbot.rightWheel].state = LOW;	
 	}
 	else {
+		// poll on
 		ledInfos[wheelbot.leftWheel].blink = -1;
 		ledInfos[wheelbot.rightWheel].blink = -1;		
 	}
+	// straight ahead: left and right wheel on during max - poll timeslice
 	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = wheelbot.poll_max_ms - wheelbot.poll_ms;
-	ledInfos[wheelbot.leftWheel].blink_off_ms = ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_ms;
-	float steer_factor = ((float)wheelbot.steer) / (float)90;
-	ledInfos[wheelbot.leftWheel].blink_on_ms = (int)(((float)ledInfos[wheelbot.leftWheel].blink_on_ms) / steer_factor);
-	ledInfos[wheelbot.leftWheel].blink_off_ms = (int)(((float)ledInfos[wheelbot.leftWheel].blink_off_ms) * steer_factor);
-	ledInfos[wheelbot.rightWheel].blink_on_ms = (int)(((float)ledInfos[wheelbot.rightWheel].blink_on_ms) * steer_factor);
-	ledInfos[wheelbot.rightWheel].blink_off_ms = (int)(((float)ledInfos[wheelbot.rightWheel].blink_off_ms) / steer_factor);		
+	// reduce inner wheel speed
+	int angle_delta = wheelbot.steer - 90;
+	if (angle_delta > 0)
+		ledInfos[wheelbot.leftWheel].blink_on_ms = (ledInfos[wheelbot.leftWheel].blink_on_ms * (90 - angle_delta)) / 90;
+	else 
+		ledInfos[wheelbot.rightWheel].blink_on_ms = (ledInfos[wheelbot.rightWheel].blink_on_ms * (90 + angle_delta)) / 90;
+	// off timeslice = max - on timeslice
+	ledInfos[wheelbot.leftWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.leftWheel].blink_on_ms;
+	ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.rightWheel].blink_on_ms;
+	// servo steer
 	servoInfos[wheelbot.rearServo].angle = wheelbot.steer;	
 }
 
@@ -465,10 +472,12 @@ bool handleWHEELBOTRequest(const char * req) {
 	String strReq = req;
 	if (strReq.startsWith("POLL/"))
 		wheelbot.poll_ms = min((int)strReq.substring(5).toInt(),wheelbot.poll_max_ms);
-	else if (strReq.startsWith("POLLMAX/"))
+	else if (strReq.startsWith("POLLMAX/")) {
 		wheelbot.poll_max_ms = strReq.substring(8).toInt();
+		wheelbot.poll_ms = -1;
+	}
 	else if (strReq.startsWith("STEER/"))
-		wheelbot.steer = strReq.substring(6).toInt();
+		wheelbot.steer = min(180,max(0,(int)strReq.substring(6).toInt()));
 	else
 		return false;
 	return true;
