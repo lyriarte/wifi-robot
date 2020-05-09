@@ -27,6 +27,12 @@
 #define MAIN_LOOP_POLL_MS 2
 #define MOTOR_POLL_MAX_MS 1000
 
+#define MAX_RANGE_CM 1000
+#define ACT_RANGE_CM 30
+#define ECHO_TIMEOUT_US 20000
+#define ECHO_TO_CM(x) (x/60) 
+
+
 /* **** **** **** **** **** ****
  * Global variables
  * **** **** **** **** **** ****/
@@ -88,6 +94,32 @@ typedef struct {
 	int updated_ms;
 	int poll_ms;
 } POLLInfo;
+
+
+/*
+ * TELEMETER
+ */
+ 
+typedef struct {
+	int gpio_trig;
+	int gpio_echo;
+	int dist_cm;
+} TELEMETERInfo;
+
+TELEMETERInfo telemeterInfos[] = {
+	{
+		16,	// trig D0
+		12,	// echo D6
+		MAX_RANGE_CM
+	},
+	{
+		0,	// trig D3
+		13,	// echo D7
+		MAX_RANGE_CM	
+	}
+};
+
+#define N_TELEMETER (sizeof(telemeterInfos) / sizeof(TELEMETERInfo))
 
 
 /*
@@ -195,6 +227,8 @@ void step8(int pin1, int pin2, int pin3, int pin4, int i) {
  */
 
 typedef struct {
+	int leftTelemeter;
+	int rightTelemeter;
 	int leftWheel;
 	int rightWheel;
 	int rearServo;
@@ -204,7 +238,7 @@ typedef struct {
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	1,2,0,-1,MOTOR_POLL_MAX_MS,90
+	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90
 };
 
 
@@ -215,6 +249,10 @@ WHEELBOTInfo wheelbot = {
 
 void setup() {
 	int i,j;
+	for (i=0; i < N_TELEMETER; i++) {
+		pinMode(telemeterInfos[i].gpio_trig, OUTPUT);
+		pinMode(telemeterInfos[i].gpio_echo, INPUT);
+	}
 	for (i=0; i < N_LED; i++)
 		pinMode(ledInfos[i].gpio, OUTPUT);
 	for (i=0; i < N_SERVO; i++) {
@@ -440,7 +478,28 @@ bool handleSTEPPERRequest(const char * req) {
  * Wheelbot
  */ 
 
+void updateTELEMETERStatus(int index) {
+	unsigned long echoDuration;
+	digitalWrite(telemeterInfos[index].gpio_trig, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(telemeterInfos[index].gpio_trig, LOW);
+	echoDuration = pulseIn(telemeterInfos[index].gpio_echo, HIGH, ECHO_TIMEOUT_US);
+	telemeterInfos[index].dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : MAX_RANGE_CM;
+}
+
 void updateWheelbotStatus() {
+	// Perception
+	updateTELEMETERStatus(wheelbot.leftTelemeter);
+	updateTELEMETERStatus(wheelbot.rightTelemeter);
+	// Reflex override steer command
+	int steer_action = wheelbot.steer;
+	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < ACT_RANGE_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm < ACT_RANGE_CM)
+		wheelbot.poll_ms = -1; // stop
+	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < ACT_RANGE_CM)
+		steer_action = 135; // turn right
+	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < ACT_RANGE_CM)
+		steer_action = 45; // turn left
+	// Action
 	if (wheelbot.poll_ms < 0) {
 		// poll off, engine off
 		ledInfos[wheelbot.leftWheel].blink = 0;
@@ -456,7 +515,7 @@ void updateWheelbotStatus() {
 	// straight ahead: left and right wheel on during max - poll timeslice
 	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = wheelbot.poll_max_ms - wheelbot.poll_ms;
 	// reduce inner wheel speed
-	int angle_delta = wheelbot.steer - 90;
+	int angle_delta = steer_action - 90;
 	if (angle_delta > 0)
 		ledInfos[wheelbot.leftWheel].blink_on_ms = (ledInfos[wheelbot.leftWheel].blink_on_ms * (90 - angle_delta)) / 90;
 	else 
@@ -465,7 +524,7 @@ void updateWheelbotStatus() {
 	ledInfos[wheelbot.leftWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.leftWheel].blink_on_ms;
 	ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.rightWheel].blink_on_ms;
 	// servo steer
-	servoInfos[wheelbot.rearServo].angle = wheelbot.steer;	
+	servoInfos[wheelbot.rearServo].angle = steer_action;	
 }
 
 bool handleWHEELBOTRequest(const char * req) {
