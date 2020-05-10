@@ -29,7 +29,8 @@
 #define MOTOR_POLL_MAX_MS 1000
 
 #define MAX_RANGE_CM 1000
-#define ACT_RANGE_CM 30
+#define ACT_RANGE_CM 90
+#define STOP_DIST_CM 10
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
@@ -494,12 +495,12 @@ void updateWheelbotStatus() {
 	updateTELEMETERStatus(wheelbot.rightTelemeter);
 	// Reflex override steer command
 	int steer_action = wheelbot.steer;
-	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < ACT_RANGE_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm < ACT_RANGE_CM)
+	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < STOP_DIST_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm < STOP_DIST_CM)
 		wheelbot.poll_ms = -1; // stop
-	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < ACT_RANGE_CM)
-		steer_action = 135; // turn right
-	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < ACT_RANGE_CM)
-		steer_action = 45; // turn left
+	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(ACT_RANGE_CM, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
+		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm); // turn right
+	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(ACT_RANGE_CM, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
+		steer_action = min(steer_action, telemeterInfos[wheelbot.rightTelemeter].dist_cm); // turn left
 	// Action
 	if (wheelbot.poll_ms < 0) {
 		// poll off, engine off
