@@ -281,3 +281,21 @@ paths:
           description: "success"
         400:
           description: "error"
+  /WHEELBOT/STEERMAX/{angle}:
+    get:
+      tags:
+      - "WHEELBOT"
+      summary: "Set WHEELBOT maximum steer range in degrees"
+      parameters:
+      - name: "angle"
+        in: "path"
+        description: "Angle in degrees"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 180
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"

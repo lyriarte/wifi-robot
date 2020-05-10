@@ -237,10 +237,12 @@ typedef struct {
 	int poll_ms;
 	int poll_max_ms;
 	int steer;
+	int steer_min;
+	int steer_max;
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90
+	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90,0,180
 };
 
 
@@ -525,8 +527,8 @@ void updateWheelbotStatus() {
 	// off timeslice = max - on timeslice
 	ledInfos[wheelbot.leftWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.leftWheel].blink_on_ms;
 	ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.rightWheel].blink_on_ms;
-	// servo steer
-	servoInfos[wheelbot.rearServo].angle = steer_action;	
+	// servo steer in [steer_min..steer_max]
+	servoInfos[wheelbot.rearServo].angle = max(wheelbot.steer_min,min(wheelbot.steer_max,steer_action));
 }
 
 bool handleWHEELBOTRequest(const char * req) {
@@ -539,6 +541,10 @@ bool handleWHEELBOTRequest(const char * req) {
 	}
 	else if (strReq.startsWith("STEER/"))
 		wheelbot.steer = min(180,max(0,(int)strReq.substring(6).toInt()));
+	else if (strReq.startsWith("STEERMAX/")) {
+		wheelbot.steer_min = (180 - min(180,max(0,(int)strReq.substring(9).toInt()))) / 2;
+		wheelbot.steer_max = 180 - wheelbot.steer_min;
+	}
 	else
 		return false;
 	return true;

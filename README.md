@@ -57,3 +57,7 @@ GET /WHEELBOT/POLLMAX/{millis}
 GET /WHEELBOT/STEER/{angle}
 ```
 
+```
+GET /WHEELBOT/STEERMAX/{angle}
+```
+
