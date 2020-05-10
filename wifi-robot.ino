@@ -24,7 +24,8 @@
 
 #define REQ_BUFFER_SIZE 1024
 
-#define MAIN_LOOP_POLL_MS 2
+#define MAIN_LOOP_POLL_MS 50
+#define MINIMUM_UPDATE_MS 10
 #define MOTOR_POLL_MAX_MS 1000
 
 #define MAX_RANGE_CM 1000
@@ -608,7 +609,7 @@ void updateStatus() {
 void delayedWifiClientStop(int start_ms) {
 	while (wifiClient && wifiClient.connected() && millis() < start_ms + WIFI_CLIENT_DELAY_MS) {
 		updateStatus();
-		delay(MAIN_LOOP_POLL_MS);
+		delay(MINIMUM_UPDATE_MS);
 	}
 	if (wifiClient)
 		wifiClient.stop();
