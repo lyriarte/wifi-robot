@@ -605,6 +605,15 @@ void updateStatus() {
 		updateSTEPPERStatus(deviceIndex);
 }
 
+void delayedWifiClientStop(int start_ms) {
+	while (wifiClient && wifiClient.connected() && millis() < start_ms + WIFI_CLIENT_DELAY_MS) {
+		updateStatus();
+		delay(MAIN_LOOP_POLL_MS);
+	}
+	if (wifiClient)
+		wifiClient.stop();
+}
+
 void loop() {
 	int start_loop_ms;
 	while (!wifiConnect(WIFI_CONNECT_RETRY))
@@ -622,8 +631,7 @@ void loop() {
 			}
 			reqBuffer[reqBufferIndex] = 0;
 			handleHttpRequest(reqBuffer);
-			delay(WIFI_CLIENT_DELAY_MS);
-			wifiClient.stop();
+			delayedWifiClientStop(millis());
 		}
 		updateStatus();
 		pollDelay(MAIN_LOOP_POLL_MS, start_loop_ms);
