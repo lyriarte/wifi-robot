@@ -299,3 +299,21 @@ paths:
           description: "success"
         400:
           description: "error"
+  /WHEELBOT/ACTRANGE/{centimeters}:
+    get:
+      tags:
+      - "WHEELBOT"
+      summary: "Set WHEELBOT reflex steer range in centimeters"
+      parameters:
+      - name: "centimeters"
+        in: "path"
+        description: "Range in centimeters"
+        required: true
+        type: "integer"
+        format: "int32"
+        default: 60
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "error"

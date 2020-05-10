@@ -61,3 +61,7 @@ GET /WHEELBOT/STEER/{angle}
 GET /WHEELBOT/STEERMAX/{angle}
 ```
 
+```
+GET /WHEELBOT/ACTRANGE/{centimeters}
+```
+

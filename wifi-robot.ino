@@ -239,10 +239,11 @@ typedef struct {
 	int steer;
 	int steer_min;
 	int steer_max;
+	int act_range_cm;
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90,0,180
+	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90,0,180,ACT_RANGE_CM
 };
 
 
@@ -499,10 +500,10 @@ void updateWheelbotStatus() {
 	int steer_action = wheelbot.steer;
 	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < STOP_DIST_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm < STOP_DIST_CM)
 		wheelbot.poll_ms = -1; // stop
-	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(ACT_RANGE_CM, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
-		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm); // turn right
-	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(ACT_RANGE_CM, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
-		steer_action = min(steer_action, telemeterInfos[wheelbot.rightTelemeter].dist_cm); // turn left
+	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
+		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn right
+	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
+		steer_action = min(steer_action, telemeterInfos[wheelbot.rightTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn left
 	// Action
 	if (wheelbot.poll_ms < 0) {
 		// poll off, engine off
@@ -545,6 +546,8 @@ bool handleWHEELBOTRequest(const char * req) {
 		wheelbot.steer_min = (180 - min(180,max(0,(int)strReq.substring(9).toInt()))) / 2;
 		wheelbot.steer_max = 180 - wheelbot.steer_min;
 	}
+	else if (strReq.startsWith("ACTRANGE/"))
+		wheelbot.act_range_cm = strReq.substring(9).toInt();
 	else
 		return false;
 	return true;
