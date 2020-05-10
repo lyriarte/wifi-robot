@@ -593,8 +593,20 @@ bool handleHttpRequest(const char * req) {
  * Main loop
  */
 
+
+void updateStatus() {
+	int deviceIndex;
+	updateWheelbotStatus();
+	for (deviceIndex=0; deviceIndex<N_LED; deviceIndex++)
+		updateLEDStatus(deviceIndex);
+	for (deviceIndex=0; deviceIndex<N_SERVO; deviceIndex++)
+		updateSERVOStatus(deviceIndex);
+	for (deviceIndex=0; deviceIndex<N_STEPPER; deviceIndex++)
+		updateSTEPPERStatus(deviceIndex);
+}
+
 void loop() {
-	int deviceIndex, start_loop_ms;
+	int start_loop_ms;
 	while (!wifiConnect(WIFI_CONNECT_RETRY))
 		delay(WIFI_CONNECT_RETRY_DELAY_MS);
 	wifiServer.begin();
@@ -613,13 +625,7 @@ void loop() {
 			delay(WIFI_CLIENT_DELAY_MS);
 			wifiClient.stop();
 		}
-		updateWheelbotStatus();
-		for (deviceIndex=0; deviceIndex<N_LED; deviceIndex++)
-			updateLEDStatus(deviceIndex);
-		for (deviceIndex=0; deviceIndex<N_SERVO; deviceIndex++)
-			updateSERVOStatus(deviceIndex);
-		for (deviceIndex=0; deviceIndex<N_STEPPER; deviceIndex++)
-			updateSTEPPERStatus(deviceIndex);
+		updateStatus();
 		pollDelay(MAIN_LOOP_POLL_MS, start_loop_ms);
 		wifiStatus = WiFi.status();
 	}
