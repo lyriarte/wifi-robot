@@ -502,7 +502,7 @@ void updateTELEMETERStatus(int index) {
 	digitalWrite(teleP->gpio_trig, LOW);
 	/* compute current mesure */
 	echoDuration = pulseIn(teleP->gpio_echo, HIGH, ECHO_TIMEOUT_US);
-	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : MAX_RANGE_CM;
+	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : teleP->dist_cm_avg;
 	/* add current mesure to / substract oldest mesure from average */
 	teleP->dist_cm_avg += (teleP->dist_cm - teleP->dist_buf[teleP->dist_buf_index]) / DIST_BUFFER_SIZE;
 	/* replace oldest mesure with current mesure */
