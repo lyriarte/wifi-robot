@@ -252,7 +252,7 @@ typedef struct {
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90,0,180,ACT_RANGE_CM
+	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90,60,120,ACT_RANGE_CM
 };
 
 
