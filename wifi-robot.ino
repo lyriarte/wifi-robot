@@ -485,11 +485,12 @@ bool handleSTEPPERRequest(const char * req) {
 
 void updateTELEMETERStatus(int index) {
 	unsigned long echoDuration;
-	digitalWrite(telemeterInfos[index].gpio_trig, HIGH);
+	TELEMETERInfo * teleP = &telemeterInfos[index];
+	digitalWrite(teleP->gpio_trig, HIGH);
 	delayMicroseconds(10);
-	digitalWrite(telemeterInfos[index].gpio_trig, LOW);
-	echoDuration = pulseIn(telemeterInfos[index].gpio_echo, HIGH, ECHO_TIMEOUT_US);
-	telemeterInfos[index].dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : MAX_RANGE_CM;
+	digitalWrite(teleP->gpio_trig, LOW);
+	echoDuration = pulseIn(teleP->gpio_echo, HIGH, ECHO_TIMEOUT_US);
+	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : MAX_RANGE_CM;
 }
 
 void updateWheelbotStatus() {
