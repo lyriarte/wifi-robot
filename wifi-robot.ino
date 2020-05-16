@@ -31,9 +31,9 @@
 #define MAX_RANGE_CM 1000
 #define ACT_RANGE_CM 90
 #define STOP_DIST_CM 10
+#define DIST_BUFFER_SIZE 5
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
-
 
 /* **** **** **** **** **** ****
  * Global variables
@@ -105,19 +105,28 @@ typedef struct {
 typedef struct {
 	int gpio_trig;
 	int gpio_echo;
-	int dist_cm;
+	int dist_cm;		// weighted mesure
+	int dist_cm_avg;	// average mesure from buffer
+	int *dist_buf;
+	int dist_buf_index;	// oldest mesure index
 } TELEMETERInfo;
 
 TELEMETERInfo telemeterInfos[] = {
 	{
 		16,	// trig D0
 		12,	// echo D6
-		MAX_RANGE_CM
+		MAX_RANGE_CM,
+		MAX_RANGE_CM,
+		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
+		0
 	},
 	{
 		0,	// trig D3
 		13,	// echo D7
-		MAX_RANGE_CM	
+		MAX_RANGE_CM,
+		MAX_RANGE_CM,
+		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
+		0
 	}
 };
 
@@ -257,6 +266,8 @@ void setup() {
 	for (i=0; i < N_TELEMETER; i++) {
 		pinMode(telemeterInfos[i].gpio_trig, OUTPUT);
 		pinMode(telemeterInfos[i].gpio_echo, INPUT);
+		for (j=0; j < DIST_BUFFER_SIZE; j++)
+			telemeterInfos[i].dist_buf[j] = MAX_RANGE_CM;
 	}
 	for (i=0; i < N_LED; i++)
 		pinMode(ledInfos[i].gpio, OUTPUT);
@@ -489,8 +500,19 @@ void updateTELEMETERStatus(int index) {
 	digitalWrite(teleP->gpio_trig, HIGH);
 	delayMicroseconds(10);
 	digitalWrite(teleP->gpio_trig, LOW);
+	/* compute current mesure */
 	echoDuration = pulseIn(teleP->gpio_echo, HIGH, ECHO_TIMEOUT_US);
 	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : MAX_RANGE_CM;
+	/* add current mesure to / substract oldest mesure from average */
+	teleP->dist_cm_avg += (teleP->dist_cm - teleP->dist_buf[teleP->dist_buf_index]) / DIST_BUFFER_SIZE;
+	/* replace oldest mesure with current mesure */
+	teleP->dist_buf[teleP->dist_buf_index] = teleP->dist_cm;
+	/* weight current mesure with previous mesure and average mesure */
+	teleP->dist_cm = (teleP->dist_cm * 3 
+		+ teleP->dist_buf[(teleP->dist_buf_index ? teleP->dist_buf_index : DIST_BUFFER_SIZE) - 1] * 2
+		+ teleP->dist_cm_avg) / 6;
+	/* increment index */
+	teleP->dist_buf_index = (teleP->dist_buf_index + 1) % DIST_BUFFER_SIZE;
 }
 
 void updateWheelbotStatus() {
