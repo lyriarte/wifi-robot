@@ -35,6 +35,10 @@
 #define DIST_WEIGHT_CUR 3
 #define DIST_WEIGHT_PRV 2
 #define DIST_WEIGHT_AVG 1
+#define STEER_BUFFER_SIZE 5
+#define STEER_WEIGHT_CUR 3
+#define STEER_WEIGHT_PRV 2
+#define STEER_WEIGHT_AVG 1
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
@@ -249,13 +253,24 @@ typedef struct {
 	int poll_ms;
 	int poll_max_ms;
 	int steer;
+	int steer_avg;	// average steer command from buffer
+	int *steer_buf;
+	int steer_index;// oldest steer command index
 	int steer_min;
 	int steer_max;
 	int act_range_cm;
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	0,1,1,2,0,-1,MOTOR_POLL_MAX_MS,90,60,120,ACT_RANGE_CM
+	0,1,	// telemeters indexes
+	1,2,	// wheel motors / leds indexes
+	0,		// steer servo index
+	-1,MOTOR_POLL_MAX_MS, // polling
+	90,90,	// initial and steer buffer average
+	(int*) malloc(STEER_BUFFER_SIZE * sizeof(int)), // steer buffer
+	0,		// initial steer buffer index
+	60,120, // steer limits
+	ACT_RANGE_CM // action range
 };
 
 
@@ -266,6 +281,8 @@ WHEELBOTInfo wheelbot = {
 
 void setup() {
 	int i,j;
+	for (i=0; i < STEER_BUFFER_SIZE; i++)
+		wheelbot.steer_buf[i] = 90;
 	for (i=0; i < N_TELEMETER; i++) {
 		pinMode(telemeterInfos[i].gpio_trig, OUTPUT);
 		pinMode(telemeterInfos[i].gpio_echo, INPUT);
@@ -545,6 +562,18 @@ void updateWheelbotStatus() {
 	}
 	// straight ahead: left and right wheel on during max - poll timeslice
 	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = wheelbot.poll_max_ms - wheelbot.poll_ms;
+
+	/* add current steer action to / substract oldest teer action from average */
+	wheelbot.steer_avg += (steer_action - wheelbot.steer_buf[wheelbot.steer_index]) / STEER_BUFFER_SIZE;
+	/* replace oldest steer action with current steer action */
+	wheelbot.steer_buf[wheelbot.steer_index] = steer_action;
+	/* weight current steer action with previous and average steer actions */
+	steer_action = (steer_action * STEER_WEIGHT_CUR 
+		+ wheelbot.steer_buf[(wheelbot.steer_index ? wheelbot.steer_index : STEER_BUFFER_SIZE) - 1] * STEER_WEIGHT_PRV
+		+ wheelbot.steer_avg * STEER_WEIGHT_AVG) / (STEER_WEIGHT_CUR + STEER_WEIGHT_PRV + STEER_WEIGHT_AVG);
+	/* increment index */
+	wheelbot.steer_index = (wheelbot.steer_index + 1) % STEER_BUFFER_SIZE;
+
 	// reduce inner wheel speed
 	int angle_delta = steer_action - 90;
 	if (angle_delta > 0)
