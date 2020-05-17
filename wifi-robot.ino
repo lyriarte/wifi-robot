@@ -32,6 +32,9 @@
 #define ACT_RANGE_CM 90
 #define STOP_DIST_CM 10
 #define DIST_BUFFER_SIZE 5
+#define DIST_WEIGHT_CUR 3
+#define DIST_WEIGHT_PRV 2
+#define DIST_WEIGHT_AVG 1
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
@@ -508,9 +511,9 @@ void updateTELEMETERStatus(int index) {
 	/* replace oldest mesure with current mesure */
 	teleP->dist_buf[teleP->dist_buf_index] = teleP->dist_cm;
 	/* weight current mesure with previous mesure and average mesure */
-	teleP->dist_cm = (teleP->dist_cm * 3 
-		+ teleP->dist_buf[(teleP->dist_buf_index ? teleP->dist_buf_index : DIST_BUFFER_SIZE) - 1] * 2
-		+ teleP->dist_cm_avg) / 6;
+	teleP->dist_cm = (teleP->dist_cm * DIST_WEIGHT_CUR 
+		+ teleP->dist_buf[(teleP->dist_buf_index ? teleP->dist_buf_index : DIST_BUFFER_SIZE) - 1] * DIST_WEIGHT_PRV
+		+ teleP->dist_cm_avg * DIST_WEIGHT_AVG) / (DIST_WEIGHT_CUR + DIST_WEIGHT_PRV + DIST_WEIGHT_AVG);
 	/* increment index */
 	teleP->dist_buf_index = (teleP->dist_buf_index + 1) % DIST_BUFFER_SIZE;
 }
