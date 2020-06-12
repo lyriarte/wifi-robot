@@ -1,0 +1,55 @@
+<html>
+
+<head>
+<title>Wheelbot</title>
+<style>
+input {width: 90%; height: 20%; font-size: 8em}
+</style>
+<script>
+
+var host = window.location.host;
+
+function sendCommand(path) {
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("GET", "http://" + host + path, true);
+	xmlhttp.send();
+}
+
+
+function argsFromQueryString(queryString) {
+	var args = {};
+	if (!queryString)
+		return args;
+	var getVars = queryString.split("\&");
+	for (var i=0; i<getVars.length; i++) {
+		var varVal = getVars[i].split("\=");
+		if (varVal.length == 2)
+			args[varVal[0]] = varVal[1];
+	}
+	return args;
+}
+
+function initView() {
+	var args = argsFromQueryString(window.location.toString().split("\?")[1]);
+	if (args.host)
+		host = args.host;
+	if (args.pollmax) {
+		view.pollSlider.max = args.pollmax;
+		sendCommand('/WHEELBOT/POLLMAX/'+view.pollSlider.max);
+	}
+}
+
+</script>
+</head>
+
+
+<body onload="initView()">
+<center>
+<input type="button" value="STOP" onclick="sendCommand('/WHEELBOT/POLL/-1')"/>
+<input type="button" value="RUN" onclick="sendCommand('/WHEELBOT/POLL/0')"/>
+<input type="button" value="CENTER" onclick="sendCommand('/WHEELBOT/STEER/90')"/>
+<input type="button" value="LEFT" onclick="sendCommand('/WHEELBOT/STEER/150')"/>
+<input type="button" value="RIGHT" onclick="sendCommand('/WHEELBOT/STEER/30')"/>
+</center>
+</body>
+</html>
