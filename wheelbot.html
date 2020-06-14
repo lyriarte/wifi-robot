@@ -50,6 +50,8 @@ function initView() {
 <input type="button" value="CENTER" onclick="sendCommand('/WHEELBOT/STEER/90')"/>
 <input type="button" value="LEFT" onclick="sendCommand('/WHEELBOT/STEER/150')"/>
 <input type="button" value="RIGHT" onclick="sendCommand('/WHEELBOT/STEER/30')"/>
+<input type="text" value="/WHEELBOT/POLL/-1" id="CMD"/>
+<input type="button" value="COMMAND" onclick="sendCommand(document.getElementById('CMD').value)"/>
 </center>
 </body>
 </html>
