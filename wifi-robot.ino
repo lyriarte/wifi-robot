@@ -120,7 +120,7 @@ typedef struct {
 
 TELEMETERInfo telemeterInfos[] = {
 	{
-		16,	// trig D0
+		0,	// trig D3
 		12,	// echo D6
 		MAX_RANGE_CM,
 		MAX_RANGE_CM,
@@ -130,6 +130,14 @@ TELEMETERInfo telemeterInfos[] = {
 	{
 		0,	// trig D3
 		13,	// echo D7
+		MAX_RANGE_CM,
+		MAX_RANGE_CM,
+		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
+		0
+	},
+	{
+		0,	// trig D3
+		16,	// echo D0
 		MAX_RANGE_CM,
 		MAX_RANGE_CM,
 		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
@@ -247,6 +255,7 @@ void step8(int pin1, int pin2, int pin3, int pin4, int i) {
 typedef struct {
 	int leftTelemeter;
 	int rightTelemeter;
+	int frontTelemeter;
 	int leftWheel;
 	int rightWheel;
 	int rearServo;
@@ -262,7 +271,7 @@ typedef struct {
 } WHEELBOTInfo;
 
 WHEELBOTInfo wheelbot = {
-	0,1,	// telemeters indexes
+	0,1,2,	// telemeters indexes
 	1,2,	// wheel motors / leds indexes
 	0,		// steer servo index
 	-1,MOTOR_POLL_MAX_MS, // polling
@@ -539,6 +548,7 @@ void updateWheelbotStatus() {
 	// Perception
 	updateTELEMETERStatus(wheelbot.leftTelemeter);
 	updateTELEMETERStatus(wheelbot.rightTelemeter);
+	updateTELEMETERStatus(wheelbot.frontTelemeter);
 	// Reflex override steer command
 	int steer_action = wheelbot.steer;
 	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < STOP_DIST_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm < STOP_DIST_CM)
