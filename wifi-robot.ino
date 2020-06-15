@@ -551,8 +551,11 @@ void updateWheelbotStatus() {
 	updateTELEMETERStatus(wheelbot.frontTelemeter);
 	// Reflex override steer command
 	int steer_action = wheelbot.steer;
-	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < STOP_DIST_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm < STOP_DIST_CM)
+	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < STOP_DIST_CM || telemeterInfos[wheelbot.rightTelemeter].dist_cm < STOP_DIST_CM || telemeterInfos[wheelbot.frontTelemeter].dist_cm < STOP_DIST_CM)
 		wheelbot.poll_ms = -1; // stop
+	else if (telemeterInfos[wheelbot.frontTelemeter].dist_cm > max(telemeterInfos[wheelbot.leftTelemeter].dist_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm) 
+	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm))
+		steer_action = 90; // straight ahead
 	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
 		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn right
 	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
