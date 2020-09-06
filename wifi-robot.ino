@@ -28,15 +28,15 @@
 #define MINIMUM_UPDATE_MS 10
 #define MOTOR_POLL_MAX_MS 500
 
-#define MAX_RANGE_CM 1000
-#define ACT_RANGE_CM 180
+#define MAX_RANGE_CM 300
+#define ACT_RANGE_CM 60
 #define STOP_DIST_CM 10
-#define DIST_BUFFER_SIZE 5
-#define DIST_WEIGHT_CUR 3
-#define DIST_WEIGHT_PRV 2
-#define DIST_WEIGHT_AVG 1
-#define STEER_BUFFER_SIZE 5
-#define STEER_WEIGHT_CUR 3
+#define DIST_BUFFER_SIZE 3
+#define DIST_WEIGHT_CUR 6
+#define DIST_WEIGHT_PRV 1
+#define DIST_WEIGHT_AVG 2
+#define STEER_BUFFER_SIZE 3
+#define STEER_WEIGHT_CUR 6
 #define STEER_WEIGHT_PRV 2
 #define STEER_WEIGHT_AVG 1
 #define ECHO_TIMEOUT_US 20000
@@ -278,7 +278,7 @@ WHEELBOTInfo wheelbot = {
 	90,90,	// initial and steer buffer average
 	(int*) malloc(STEER_BUFFER_SIZE * sizeof(int)), // steer buffer
 	0,		// initial steer buffer index
-	60,120, // steer limits
+	30,150, // steer limits
 	ACT_RANGE_CM // action range
 };
 
