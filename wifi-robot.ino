@@ -42,6 +42,10 @@
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
+#define LED_DELAY_STOP 1950
+#define LED_DELAY_FREE 450
+#define LED_DELAY_OBSTACLE 50
+
 /* **** **** **** **** **** ****
  * Global variables
  * **** **** **** **** **** ****/
@@ -168,7 +172,7 @@ LEDInfo ledInfos[] = {
 		2,	// D4 led
 		LOW,
 		-1,
-		50,250,
+		50,LED_DELAY_STOP,
 		1
 	},
 	{
@@ -551,26 +555,37 @@ void updateWheelbotStatus() {
 	updateTELEMETERStatus(wheelbot.frontTelemeter);
 	// Reflex override steer command
 	int steer_action = wheelbot.steer;
+	ledInfos[0].blink_off_ms = LED_DELAY_FREE;
 	// Stop if front obstacle too close
 	if (telemeterInfos[wheelbot.frontTelemeter].dist_cm < STOP_DIST_CM)
+	{
 		wheelbot.poll_ms = -1; // stop
+		ledInfos[0].blink_off_ms = LED_DELAY_STOP;
+	}
 	// Obstacle within act range on left or right, but further on front, steer ahead
 	else if (telemeterInfos[wheelbot.frontTelemeter].dist_cm > max(telemeterInfos[wheelbot.leftTelemeter].dist_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm) 
 	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm))
 		steer_action = 90; // straight ahead
 	// Obstacle within act range closer on the left, turn right
 	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
+	{
 		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn right
+		ledInfos[0].blink_off_ms = LED_DELAY_OBSTACLE;
+	}
 	// Obstacle within act range closer on the right, turn left
 	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
+	{
 		steer_action = min(steer_action, telemeterInfos[wheelbot.rightTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn left
+		ledInfos[0].blink_off_ms = LED_DELAY_OBSTACLE;
+	}
 	// Action
 	if (wheelbot.poll_ms < 0) {
 		// poll off, engine off
 		ledInfos[wheelbot.leftWheel].blink = 0;
 		ledInfos[wheelbot.rightWheel].blink = 0;		
 		ledInfos[wheelbot.leftWheel].state = LOW;
-		ledInfos[wheelbot.rightWheel].state = LOW;	
+		ledInfos[wheelbot.rightWheel].state = LOW;
+		ledInfos[0].blink_off_ms = LED_DELAY_STOP;
 	}
 	else {
 		// poll on
