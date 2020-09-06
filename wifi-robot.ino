@@ -688,6 +688,14 @@ void updateStatus() {
 		updateSTEPPERStatus(deviceIndex);
 }
 
+void delayWithUpdateStatus(int delay_ms) {
+	int start_ms = millis();
+	while (millis() - start_ms < delay_ms) {
+		updateStatus();
+		delay(MINIMUM_UPDATE_MS);
+	}
+}
+
 void delayedWifiClientStop(int start_ms) {
 	while (wifiClient && wifiClient.connected() && millis() < start_ms + WIFI_CLIENT_DELAY_MS) {
 		updateStatus();
@@ -700,14 +708,14 @@ void delayedWifiClientStop(int start_ms) {
 void loop() {
 	int start_loop_ms;
 	while (!wifiConnect(WIFI_CONNECT_RETRY))
-		delay(WIFI_CONNECT_RETRY_DELAY_MS);
+		delayWithUpdateStatus(WIFI_CONNECT_RETRY_DELAY_MS);
 	wifiServer.begin();
-	delay(WIFI_SERVER_DELAY_MS);
+	delayWithUpdateStatus(WIFI_SERVER_DELAY_MS);
 	while (wifiStatus == WL_CONNECTED) {
 		start_loop_ms = millis();
 		wifiClient = wifiServer.available();
 		if (wifiClient && wifiClient.connected()) {
-			delay(WIFI_CLIENT_CONNECTED_DELAY_MS);
+			delayWithUpdateStatus(WIFI_CLIENT_CONNECTED_DELAY_MS);
 			reqBufferIndex = 0;
 			while (wifiClient.available() && reqBufferIndex < REQ_BUFFER_SIZE-1) {
 				reqBuffer[reqBufferIndex++] = wifiClient.read();
