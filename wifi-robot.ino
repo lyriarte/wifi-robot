@@ -30,7 +30,7 @@
 
 #define MAX_RANGE_CM 300
 #define ACT_RANGE_CM 60
-#define STOP_DIST_CM 10
+#define STOP_DIST_CM 15
 #define DIST_BUFFER_SIZE 3
 #define DIST_WEIGHT_CUR 6
 #define DIST_WEIGHT_PRV 1
@@ -551,13 +551,17 @@ void updateWheelbotStatus() {
 	updateTELEMETERStatus(wheelbot.frontTelemeter);
 	// Reflex override steer command
 	int steer_action = wheelbot.steer;
-	if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < STOP_DIST_CM || telemeterInfos[wheelbot.rightTelemeter].dist_cm < STOP_DIST_CM || telemeterInfos[wheelbot.frontTelemeter].dist_cm < STOP_DIST_CM)
+	// Stop if front obstacle too close
+	if (telemeterInfos[wheelbot.frontTelemeter].dist_cm < STOP_DIST_CM)
 		wheelbot.poll_ms = -1; // stop
+	// Obstacle within act range on left or right, but further on front, steer ahead
 	else if (telemeterInfos[wheelbot.frontTelemeter].dist_cm > max(telemeterInfos[wheelbot.leftTelemeter].dist_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm) 
 	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm))
 		steer_action = 90; // straight ahead
+	// Obstacle within act range closer on the left, turn right
 	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
 		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn right
+	// Obstacle within act range closer on the right, turn left
 	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
 		steer_action = min(steer_action, telemeterInfos[wheelbot.rightTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn left
 	// Action
