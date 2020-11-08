@@ -31,14 +31,6 @@
 #define MAX_RANGE_CM 300
 #define ACT_RANGE_CM 60
 #define STOP_DIST_CM 15
-#define DIST_BUFFER_SIZE 3
-#define DIST_WEIGHT_CUR 6
-#define DIST_WEIGHT_PRV 1
-#define DIST_WEIGHT_AVG 2
-#define STEER_BUFFER_SIZE 3
-#define STEER_WEIGHT_CUR 6
-#define STEER_WEIGHT_PRV 2
-#define STEER_WEIGHT_AVG 1
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
@@ -116,36 +108,24 @@ typedef struct {
 typedef struct {
 	int gpio_trig;
 	int gpio_echo;
-	int dist_cm;		// weighted mesure
-	int dist_cm_avg;	// average mesure from buffer
-	int *dist_buf;
-	int dist_buf_index;	// oldest mesure index
+	int dist_cm;
 } TELEMETERInfo;
 
 TELEMETERInfo telemeterInfos[] = {
 	{
 		0,	// trig D3
 		12,	// echo D6
-		MAX_RANGE_CM,
-		MAX_RANGE_CM,
-		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
-		0
+		MAX_RANGE_CM
 	},
 	{
 		0,	// trig D3
 		13,	// echo D7
-		MAX_RANGE_CM,
-		MAX_RANGE_CM,
-		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
-		0
+		MAX_RANGE_CM
 	},
 	{
 		0,	// trig D3
 		16,	// echo D0
-		MAX_RANGE_CM,
-		MAX_RANGE_CM,
-		(int*) malloc(DIST_BUFFER_SIZE * sizeof(int)),
-		0
+		MAX_RANGE_CM
 	}
 };
 
@@ -266,9 +246,6 @@ typedef struct {
 	int poll_ms;
 	int poll_max_ms;
 	int steer;
-	int steer_avg;	// average steer command from buffer
-	int *steer_buf;
-	int steer_index;// oldest steer command index
 	int steer_min;
 	int steer_max;
 	int act_range_cm;
@@ -279,9 +256,7 @@ WHEELBOTInfo wheelbot = {
 	1,2,	// wheel motors / leds indexes
 	0,		// steer servo index
 	-1,MOTOR_POLL_MAX_MS, // polling
-	90,90,	// initial and steer buffer average
-	(int*) malloc(STEER_BUFFER_SIZE * sizeof(int)), // steer buffer
-	0,		// initial steer buffer index
+	90,	// initial steer
 	30,150, // steer limits
 	ACT_RANGE_CM // action range
 };
@@ -294,13 +269,9 @@ WHEELBOTInfo wheelbot = {
 
 void setup() {
 	int i,j;
-	for (i=0; i < STEER_BUFFER_SIZE; i++)
-		wheelbot.steer_buf[i] = 90;
 	for (i=0; i < N_TELEMETER; i++) {
 		pinMode(telemeterInfos[i].gpio_trig, OUTPUT);
 		pinMode(telemeterInfos[i].gpio_echo, INPUT);
-		for (j=0; j < DIST_BUFFER_SIZE; j++)
-			telemeterInfos[i].dist_buf[j] = MAX_RANGE_CM;
 	}
 	for (i=0; i < N_LED; i++)
 		pinMode(ledInfos[i].gpio, OUTPUT);
@@ -535,17 +506,7 @@ void updateTELEMETERStatus(int index) {
 	digitalWrite(teleP->gpio_trig, LOW);
 	/* compute current mesure */
 	echoDuration = pulseIn(teleP->gpio_echo, HIGH, ECHO_TIMEOUT_US);
-	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : teleP->dist_cm_avg;
-	/* add current mesure to / substract oldest mesure from average */
-	teleP->dist_cm_avg += (teleP->dist_cm - teleP->dist_buf[teleP->dist_buf_index]) / DIST_BUFFER_SIZE;
-	/* replace oldest mesure with current mesure */
-	teleP->dist_buf[teleP->dist_buf_index] = teleP->dist_cm;
-	/* weight current mesure with previous mesure and average mesure */
-	teleP->dist_cm = (teleP->dist_cm * DIST_WEIGHT_CUR 
-		+ teleP->dist_buf[(teleP->dist_buf_index ? teleP->dist_buf_index : DIST_BUFFER_SIZE) - 1] * DIST_WEIGHT_PRV
-		+ teleP->dist_cm_avg * DIST_WEIGHT_AVG) / (DIST_WEIGHT_CUR + DIST_WEIGHT_PRV + DIST_WEIGHT_AVG);
-	/* increment index */
-	teleP->dist_buf_index = (teleP->dist_buf_index + 1) % DIST_BUFFER_SIZE;
+	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : teleP->dist_cm;
 }
 
 void updateWheelbotStatus() {
@@ -565,7 +526,9 @@ void updateWheelbotStatus() {
 	// Obstacle within act range on left or right, but further on front, steer ahead
 	else if (telemeterInfos[wheelbot.frontTelemeter].dist_cm > max(telemeterInfos[wheelbot.leftTelemeter].dist_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm) 
 	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm))
+	{
 		steer_action = 90; // straight ahead
+	}
 	// Obstacle within act range closer on the left, turn right
 	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
 	{
@@ -594,18 +557,6 @@ void updateWheelbotStatus() {
 	}
 	// straight ahead: left and right wheel on during max - poll timeslice
 	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = wheelbot.poll_max_ms - wheelbot.poll_ms;
-
-	/* add current steer action to / substract oldest teer action from average */
-	wheelbot.steer_avg += (steer_action - wheelbot.steer_buf[wheelbot.steer_index]) / STEER_BUFFER_SIZE;
-	/* replace oldest steer action with current steer action */
-	wheelbot.steer_buf[wheelbot.steer_index] = steer_action;
-	/* weight current steer action with previous and average steer actions */
-	steer_action = (steer_action * STEER_WEIGHT_CUR 
-		+ wheelbot.steer_buf[(wheelbot.steer_index ? wheelbot.steer_index : STEER_BUFFER_SIZE) - 1] * STEER_WEIGHT_PRV
-		+ wheelbot.steer_avg * STEER_WEIGHT_AVG) / (STEER_WEIGHT_CUR + STEER_WEIGHT_PRV + STEER_WEIGHT_AVG);
-	/* increment index */
-	wheelbot.steer_index = (wheelbot.steer_index + 1) % STEER_BUFFER_SIZE;
-
 	// reduce inner wheel speed
 	int angle_delta = steer_action - 90;
 	if (angle_delta > 0)
