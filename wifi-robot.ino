@@ -366,7 +366,7 @@ bool wifiNetConnect(wifiNetInfo *net, int retry) {
 	while (wifiStatus != WL_CONNECTED && retry > 0) {
 		retry--;
 		Serial.print(".");
-		delay(WIFI_CONNECT_DELAY_MS);
+		delayWithUpdateStatus(WIFI_CONNECT_DELAY_MS);
 		wifiStatus = WiFi.status();
 	}
 	Serial.println();
@@ -568,6 +568,14 @@ void updateWheelbotStatus() {
 	ledInfos[wheelbot.rightWheel].blink_off_ms = wheelbot.poll_max_ms - ledInfos[wheelbot.rightWheel].blink_on_ms;
 	// servo steer in [steer_min..steer_max]
 	servoInfos[wheelbot.rearServo].angle = max(wheelbot.steer_min,min(wheelbot.steer_max,steer_action));
+
+	// Turn LED on while not connected
+	if (wifiStatus == WL_CONNECTED)
+		ledInfos[0].blink = -1;
+	else {
+		ledInfos[0].blink = 0;
+		ledInfos[0].state = HIGH;
+	}
 }
 
 bool handleWHEELBOTRequest(const char * req) {
