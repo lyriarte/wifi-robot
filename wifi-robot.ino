@@ -509,11 +509,18 @@ void updateTELEMETERStatus(int index) {
 	teleP->dist_cm = echoDuration ? ECHO_TO_CM(echoDuration) : teleP->dist_cm;
 }
 
+void updateWheelbotTelemeterStatus(int index) {
+	updateTELEMETERStatus(index);
+	/* assume close to min range if no result */
+	if (telemeterInfos[index].dist_cm == 0)
+		telemeterInfos[index].dist_cm = MIN_RANGE_CM + (wheelbot.act_range_cm - MIN_RANGE_CM) / 4;
+}
+
 void updateWheelbotStatus() {
 	// Perception
-	updateTELEMETERStatus(wheelbot.leftTelemeter);
-	updateTELEMETERStatus(wheelbot.rightTelemeter);
-	updateTELEMETERStatus(wheelbot.frontTelemeter);
+	updateWheelbotTelemeterStatus(wheelbot.leftTelemeter);
+	updateWheelbotTelemeterStatus(wheelbot.rightTelemeter);
+	updateWheelbotTelemeterStatus(wheelbot.frontTelemeter);
 	// Reflex override steer command
 	int steer_action = wheelbot.steer;
 	ledInfos[0].blink_off_ms = LED_DELAY_FREE;
