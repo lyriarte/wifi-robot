@@ -29,8 +29,8 @@
 #define MOTOR_POLL_MAX_MS 500
 
 #define MAX_RANGE_CM 300
-#define ACT_RANGE_CM 60
-#define STOP_DIST_CM 15
+#define ACT_RANGE_CM 30
+#define MIN_RANGE_CM 10
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
@@ -518,14 +518,16 @@ void updateWheelbotStatus() {
 	int steer_action = wheelbot.steer;
 	ledInfos[0].blink_off_ms = LED_DELAY_FREE;
 	// Stop if front obstacle too close
-	if (telemeterInfos[wheelbot.frontTelemeter].dist_cm < STOP_DIST_CM)
+	if (telemeterInfos[wheelbot.frontTelemeter].dist_cm < MIN_RANGE_CM)
 	{
 		wheelbot.poll_ms = -1; // stop
 		ledInfos[0].blink_off_ms = LED_DELAY_STOP;
 	}
-	// Obstacle within act range on left or right, but further on front, steer ahead
+
+	// Obstacle within act range but not emergency range on left or right, and clearer on front, steer ahead
 	else if (telemeterInfos[wheelbot.frontTelemeter].dist_cm > max(telemeterInfos[wheelbot.leftTelemeter].dist_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm) 
-	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm))
+	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm)
+	&& telemeterInfos[wheelbot.leftTelemeter].dist_cm >= MIN_RANGE_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm >= MIN_RANGE_CM)
 	{
 		steer_action = 90; // straight ahead
 	}
