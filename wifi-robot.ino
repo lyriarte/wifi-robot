@@ -29,8 +29,8 @@
 #define MOTOR_POLL_MAX_MS 500
 
 #define MAX_RANGE_CM 300
-#define ACT_RANGE_CM 30
-#define MIN_RANGE_CM 10
+#define ACT_RANGE_CM 45
+#define MIN_RANGE_CM 15
 #define ECHO_TIMEOUT_US 20000
 #define ECHO_TO_CM(x) (x/60) 
 
@@ -516,6 +516,16 @@ void updateWheelbotTelemeterStatus(int index) {
 		telemeterInfos[index].dist_cm = MIN_RANGE_CM + (wheelbot.act_range_cm - MIN_RANGE_CM) / 4;
 }
 
+int wheelbotSteerActionLeft(int dist_cm) {
+	// proportional steer left
+	return min(wheelbot.steer, dist_cm * 90 / wheelbot.act_range_cm);
+}
+
+int wheelbotSteerActionRight(int dist_cm) {
+	// proportional steer right
+	return max(wheelbot.steer, 180 - dist_cm * 90 / wheelbot.act_range_cm);
+}
+
 void updateWheelbotStatus() {
 	// Perception
 	updateWheelbotTelemeterStatus(wheelbot.leftTelemeter);
@@ -530,26 +540,38 @@ void updateWheelbotStatus() {
 		wheelbot.poll_ms = -1; // stop
 		ledInfos[0].blink_off_ms = LED_DELAY_STOP;
 	}
-
-	// Obstacle within act range but not emergency range on left or right, and clearer on front, steer ahead
-	else if (telemeterInfos[wheelbot.frontTelemeter].dist_cm > max(telemeterInfos[wheelbot.leftTelemeter].dist_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm) 
-	&& (telemeterInfos[wheelbot.leftTelemeter].dist_cm < wheelbot.act_range_cm || telemeterInfos[wheelbot.rightTelemeter].dist_cm < wheelbot.act_range_cm)
-	&& telemeterInfos[wheelbot.leftTelemeter].dist_cm >= MIN_RANGE_CM && telemeterInfos[wheelbot.rightTelemeter].dist_cm >= MIN_RANGE_CM)
-	{
-		steer_action = 90; // straight ahead
+	else {
+		// Compute min and max distance mesures
+		int min_cm = min(telemeterInfos[wheelbot.frontTelemeter].dist_cm,
+						min(telemeterInfos[wheelbot.leftTelemeter].dist_cm,telemeterInfos[wheelbot.rightTelemeter].dist_cm));
+		int max_cm = max(telemeterInfos[wheelbot.frontTelemeter].dist_cm,
+						max(telemeterInfos[wheelbot.leftTelemeter].dist_cm,telemeterInfos[wheelbot.rightTelemeter].dist_cm));
+		// Obstacle within act range
+		if (min_cm < wheelbot.act_range_cm)
+		{
+			ledInfos[0].blink_off_ms = LED_DELAY_OBSTACLE;
+			// Obstacle too close on a side 
+			if (min_cm < MIN_RANGE_CM) {
+				// Turn to the opposite side
+				if (min_cm == telemeterInfos[wheelbot.leftTelemeter].dist_cm)  {
+					steer_action = wheelbotSteerActionRight(min_cm);
+    				} else {
+					steer_action = wheelbotSteerActionLeft(min_cm);
+    				}
+			}
+			else {
+				// Turn to the most open direction
+				if (max_cm == telemeterInfos[wheelbot.leftTelemeter].dist_cm) {
+					steer_action = wheelbotSteerActionLeft(min_cm);
+				} else if (max_cm == telemeterInfos[wheelbot.rightTelemeter].dist_cm) {
+					steer_action = wheelbotSteerActionRight(min_cm);
+				} else {
+					steer_action = 90;
+    				}
+			}
+		}	
 	}
-	// Obstacle within act range closer on the left, turn right
-	else if (telemeterInfos[wheelbot.leftTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.rightTelemeter].dist_cm))
-	{
-		steer_action = max(steer_action, 180 - telemeterInfos[wheelbot.leftTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn right
-		ledInfos[0].blink_off_ms = LED_DELAY_OBSTACLE;
-	}
-	// Obstacle within act range closer on the right, turn left
-	else if (telemeterInfos[wheelbot.rightTelemeter].dist_cm < min(wheelbot.act_range_cm, telemeterInfos[wheelbot.leftTelemeter].dist_cm))
-	{
-		steer_action = min(steer_action, telemeterInfos[wheelbot.rightTelemeter].dist_cm * 90 / wheelbot.act_range_cm); // turn left
-		ledInfos[0].blink_off_ms = LED_DELAY_OBSTACLE;
-	}
+	
 	// Action
 	if (wheelbot.poll_ms < 0) {
 		// poll off, engine off
