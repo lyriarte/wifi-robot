@@ -74,7 +74,9 @@ wifiNetInfo networks[] = {
   }
 };
 
+#define N_NETWORKS (sizeof(networks) / sizeof(wifiNetInfo))
 
+int i_network = -1;
 int wifiStatus = WL_IDLE_STATUS;
 char hostnameSSID[] = "ESP_XXXXXX";
 char wifiMacStr[] = "00:00:00:00:00:00";
@@ -343,17 +345,16 @@ void wifiMacInit() {
 }
 
 bool wifiConnect(int retry) {
-	int i,n;
 	wifiStatus = WiFi.status();
-	if (wifiStatus == WL_CONNECTED)
+	if (i_network >= 0 && wifiStatus == WL_CONNECTED)
 		return true;
-	n = sizeof(networks) / sizeof(wifiNetInfo);
-	for (i=0; i<n; i++) {
-		if (wifiNetConnect(&networks[i], retry))
+	for (i_network=0; i_network<N_NETWORKS; i_network++) {
+		if (wifiNetConnect(&networks[i_network], retry))
 			return true;
 	}
 	WiFi.disconnect();
 	wifiStatus = WiFi.status();
+	i_network = -1;
 	return false;
 }
 
@@ -373,6 +374,7 @@ bool wifiNetConnect(wifiNetInfo *net, int retry) {
 	if (wifiStatus == WL_CONNECTED) {
 		Serial.print("WiFi client IP Address: ");
 		Serial.println(WiFi.localIP());
+		net->address = WiFi.localIP();
 		if (MDNS.begin(hostnameSSID)) {
 			Serial.print("Registered mDNS hostname: ");
 			Serial.println(hostnameSSID);
@@ -630,6 +632,16 @@ bool handleWHEELBOTRequest(const char * req) {
 	return true;
 }
 
+bool handleSSIDChangeRequest(const char * req) {
+	String strReq = req;
+	int networkReq = strReq.toInt();
+	if (networkReq < 0 || networkReq >= N_NETWORKS)
+		return false;
+	i_network = networkReq;
+	return wifiNetConnect(&networks[i_network], WIFI_CONNECT_RETRY);
+}
+
+
 
 /*
  * HTTP request main dispatch
@@ -669,6 +681,8 @@ bool handleHttpRequest(const char * req) {
 		result = handleSTEPPERRequest(strReq.substring(8).c_str());
 	else if (strReq.startsWith("WHEELBOT/"))
 		result = handleWHEELBOTRequest(strReq.substring(9).c_str());
+	else if (strReq.startsWith("SSID/"))
+		result = handleSSIDChangeRequest(strReq.substring(5).c_str());
 	if (result)
 		replyHttpSuccess(strReq);
 	else
