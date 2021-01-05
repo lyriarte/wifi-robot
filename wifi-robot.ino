@@ -592,7 +592,12 @@ void updateWheelbotStatus() {
 	ledInfos[wheelbot.leftWheel].blink_on_ms = ledInfos[wheelbot.rightWheel].blink_on_ms = wheelbot.poll_max_ms - wheelbot.poll_ms;
 	// reduce inner wheel speed
 	int angle_delta = steer_action - 90;
-	if (angle_delta > 0)
+	// sync wheels for straight ahead
+	if (angle_delta == 0) {
+		ledInfos[wheelbot.leftWheel].pollInfo.poll_ms = ledInfos[wheelbot.rightWheel].pollInfo.poll_ms = min(ledInfos[wheelbot.leftWheel].pollInfo.poll_ms,ledInfos[wheelbot.rightWheel].pollInfo.poll_ms);
+		ledInfos[wheelbot.leftWheel].pollInfo.updated_ms = ledInfos[wheelbot.rightWheel].pollInfo.updated_ms = min(ledInfos[wheelbot.leftWheel].pollInfo.updated_ms,ledInfos[wheelbot.rightWheel].pollInfo.updated_ms);
+	}
+	else if (angle_delta > 0)
 		ledInfos[wheelbot.leftWheel].blink_on_ms = (ledInfos[wheelbot.leftWheel].blink_on_ms * (90 - angle_delta)) / 90;
 	else 
 		ledInfos[wheelbot.rightWheel].blink_on_ms = (ledInfos[wheelbot.rightWheel].blink_on_ms * (90 + angle_delta)) / 90;
