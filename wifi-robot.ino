@@ -670,6 +670,16 @@ void replyHttpError(String strError) {
 	wifiClient.println();
 }
 
+void replyJsonStatus(String jsonStatus) {
+	wifiClient.println("HTTP/1.1 200 OK");
+	wifiClient.println("Content-Type: application/json");
+	wifiClient.println("Access-Control-Allow-Origin: *");
+	wifiClient.println("Connection: close");
+	wifiClient.println();
+	wifiClient.print(jsonStatus);
+	wifiClient.println();
+}
+
 bool handleHttpRequest(const char * req) {
 	if (req == NULL)
 		return false;
@@ -677,6 +687,10 @@ bool handleHttpRequest(const char * req) {
 	if (! strReq.startsWith("GET /"))
 		return false;
 	strReq = strReq.substring(5, strReq.indexOf(" HTTP"));
+	if (strReq.startsWith("STATUS")) {
+		replyJsonStatus(getJsonStatus());
+		return true;
+	}
 	bool result = false;
 	if (strReq.startsWith("LED/"))
 		result = handleLEDRequest(strReq.substring(4).c_str());
@@ -700,6 +714,25 @@ bool handleHttpRequest(const char * req) {
  * Main loop
  */
 
+
+String getJsonStatus() {;
+	String jsonStatus = "{";
+	int deviceIndex;
+	jsonStatus += "\"  LED\":[";
+	for (deviceIndex=0; deviceIndex<N_LED; deviceIndex++) {
+		if (deviceIndex) jsonStatus += ",";
+		jsonStatus += ledInfos[deviceIndex].state == HIGH ? "1" : "0";
+	}
+	jsonStatus += "]";
+	jsonStatus += "\", SERVO\":[";
+	for (deviceIndex=0; deviceIndex<N_SERVO; deviceIndex++) {
+		if (deviceIndex) jsonStatus += ",";
+		jsonStatus += String(servoInfos[deviceIndex].angle);
+	}
+	jsonStatus += "]";
+	jsonStatus += "}";
+	return jsonStatus;
+}
 
 void updateStatus() {
 	int deviceIndex;
