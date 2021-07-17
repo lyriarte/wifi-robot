@@ -680,7 +680,7 @@ bool handleHttpRequest(const char * req) {
 	bool result = false;
 	if (strReq.startsWith("LED/"))
 		result = handleLEDRequest(strReq.substring(4).c_str());
-	if (strReq.startsWith("SERVO/"))
+	else if (strReq.startsWith("SERVO/"))
 		result = handleSERVORequest(strReq.substring(6).c_str());
 	else if (strReq.startsWith("STEPPER/"))
 		result = handleSTEPPERRequest(strReq.substring(8).c_str());
