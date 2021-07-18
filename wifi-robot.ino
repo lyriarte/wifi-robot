@@ -718,13 +718,13 @@ bool handleHttpRequest(const char * req) {
 String getJsonStatus() {;
 	String jsonStatus = "{";
 	int deviceIndex;
-	jsonStatus += "\"  LED\":[";
+	jsonStatus += "  \"LED\":[";
 	for (deviceIndex=0; deviceIndex<N_LED; deviceIndex++) {
 		if (deviceIndex) jsonStatus += ",";
 		jsonStatus += ledInfos[deviceIndex].state == HIGH ? "1" : "0";
 	}
 	jsonStatus += "]";
-	jsonStatus += "\", SERVO\":[";
+	jsonStatus += ", \"SERVO\":[";
 	for (deviceIndex=0; deviceIndex<N_SERVO; deviceIndex++) {
 		if (deviceIndex) jsonStatus += ",";
 		jsonStatus += String(servoInfos[deviceIndex].angle);
