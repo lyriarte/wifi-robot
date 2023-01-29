@@ -299,6 +299,10 @@ void setup() {
 	}
 	for (i=0; i < N_LED; i++)
 		pinMode(ledInfos[i].gpio, OUTPUT);
+	for (i=0; i < N_TEMPERATURE; i++) {
+		temperatureInfos[i].dhtP = new DHT(temperatureInfos[i].dht_gpio,temperatureInfos[i].dht_type);
+		temperatureInfos[i].dhtP->begin();
+	}
 	for (i=0; i < N_SERVO; i++) {
 		pinMode(servoInfos[i].gpio, OUTPUT);
 		servoInfos[i].servoP->attach(servoInfos[i].gpio);
