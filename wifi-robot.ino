@@ -750,6 +750,12 @@ String getJsonStatus() {;
 		jsonStatus += ledInfos[deviceIndex].state == HIGH ? "1" : "0";
 	}
 	jsonStatus += "]";
+        jsonStatus += ",  \"TEMPERATURE\":[";
+        for (deviceIndex=0; deviceIndex<N_TEMPERATURE; deviceIndex++) {
+                if (deviceIndex) jsonStatus += ",";
+                jsonStatus += String(temperatureInfos[deviceIndex].dhtP->readTemperature());
+        }
+        jsonStatus += "]";
 	jsonStatus += ", \"SERVO\":[";
 	for (deviceIndex=0; deviceIndex<N_SERVO; deviceIndex++) {
 		if (deviceIndex) jsonStatus += ",";
