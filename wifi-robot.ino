@@ -6,6 +6,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <Servo.h> 
+#include <DHT.h>
 
 
 /* **** **** **** **** **** ****
@@ -101,6 +102,27 @@ typedef struct {
 	int updated_ms;
 	int poll_ms;
 } POLLInfo;
+
+
+/*
+ * TEMPERATURE
+ */
+ 
+typedef struct {
+	DHT * dhtP;
+	int dht_gpio;
+	int dht_type;
+} TEMPERATUREInfo;
+
+TEMPERATUREInfo temperatureInfos[] = {
+	{
+		NULL,
+		12,	// D6
+		DHT22
+	}
+};
+
+#define N_TEMPERATURE (sizeof(temperatureInfos) / sizeof(TEMPERATUREInfo))
 
 
 /*
